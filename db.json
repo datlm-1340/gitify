@@ -1,0 +1,26 @@
+{
+  "repositories": [
+    {
+      "repo_id": "framgia/disco",
+      "channel": "C02SH2T4ADA",
+      "notification_channel": "C02RW0FK8G3",
+      "users": [
+        {
+          "id": "U02RVUPDA3U",
+          "github": "datlm-1340"
+        },
+        {
+          "id": "U02RVUPDA3U",
+          "github": "duyenlt-0120"
+        }
+      ],
+      "threads": [
+        {
+          "pull_request": 2,
+          "thread_ts": "1641115723.011300",
+          "ts": "1641115723.011300"
+        }
+      ]
+    }
+  ]
+}
