@@ -1,4 +1,4 @@
-const mention = (body) => {
+const mention = (body, repository, user) => {
   return {
     trigger_id: body.trigger_id,
     view: {
@@ -22,6 +22,7 @@ const mention = (body) => {
       blocks: [
         {
           type: 'section',
+          block_id: 'users_select',
           text: {
             type: 'mrkdwn',
             text: 'Select user to mention',
@@ -33,7 +34,41 @@ const mention = (body) => {
               text: 'Select users',
               emoji: true,
             },
-            action_id: 'multi_users_select-action',
+            initial_users: user.mention,
+            action_id: 'mention_ids',
+          },
+        },
+        {
+          type: 'section',
+          block_id: 'repository_select',
+          text: {
+            type: 'plain_text',
+            text: 'Repository',
+          },
+          accessory: {
+            type: 'static_select',
+            placeholder: {
+              type: 'plain_text',
+              text: 'Select an item',
+              emoji: true,
+            },
+            initial_option: {
+              text: {
+                type: 'plain_text',
+                text: repository.id,
+              },
+              value: repository.channel,
+            },
+            options: [
+              {
+                text: {
+                  type: 'plain_text',
+                  text: repository.id,
+                },
+                value: repository.channel,
+              },
+            ],
+            action_id: 'repository',
           },
         },
       ],
