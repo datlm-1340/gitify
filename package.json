@@ -8,14 +8,14 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "npm-watch",
-    "build": "node app.js"
+    "watch": "npm-watch"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@slack/bolt": "^3.8.1",
     "dotenv": "^10.0.0",
+    "lodash": "^4.17.21",
     "mongoose": "^6.1.5",
     "npm-watch": "^0.11.0"
   }

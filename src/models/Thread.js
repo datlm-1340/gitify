@@ -10,6 +10,10 @@ const Thread = new Schema({
     type: String,
     required: true,
   },
+  author: {
+    type: String,
+    required: true,
+  },
 });
 
 module.exports = Thread;
