@@ -21,7 +21,6 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
   appToken: process.env.SLACK_APP_TOKEN,
   token: process.env.SLACK_BOT_TOKEN,
-  socketMode: true,
 });
 
 const notifyService = new NotifyService(app);
@@ -90,7 +89,7 @@ app.command('/setup', async ({ ack, body, client, logger }) => {
   try {
     await client.views.open(setup(body));
   } catch (error) {
-    logger.error(error);
+    console.error(error);
   }
 });
 
@@ -100,6 +99,7 @@ app.view('setup_modal', async ({ ack, body, view, client, logger }) => {
     await ack(success());
   } catch (e) {
     await ack(error());
+    console.error(e);
   }
 });
 
@@ -109,7 +109,7 @@ app.view('add_user_modal', async ({ ack, body, view, client, logger }) => {
     await ack(success());
   } catch (e) {
     await ack(error());
-    console.log(e);
+    console.error(e);
   }
 });
 
@@ -119,18 +119,18 @@ app.view('mention_modal', async ({ ack, body, view, client, logger }) => {
     await ack(success());
   } catch (e) {
     await ack(error());
-    console.log(e);
+    console.error(e);
   }
 });
 
 (async () => {
   try {
-    await app.start(3000);
+    await app.start(process.env.PORT || 3000);
     console.log('Bot is running!');
 
     mongoose.connect(url, { useNewUrlParser: true });
     console.log('MongoDB is connected!');
-  } catch (error) {
-    console.log(error);
+  } catch (e) {
+    console.error(e);
   }
 })();
