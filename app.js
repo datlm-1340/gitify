@@ -21,13 +21,13 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
   appToken: process.env.SLACK_APP_TOKEN,
   token: process.env.SLACK_BOT_TOKEN,
-  socketMode: true,
 });
 
 const notifyService = new NotifyService(app);
 const settingService = new SettingService(app);
 
 app.event('app_mention', async ({ event, client }) => {
+  console.log('hello');
   if (!event.thread_ts) return;
 
   let text = '';
@@ -90,15 +90,19 @@ app.command('/setup', async ({ ack, body, client, logger }) => {
   try {
     await client.views.open(setup(body));
   } catch (error) {
-    logger.error(error);
+    console.error(error);
   }
 });
 
 app.view('setup_modal', async ({ ack, body, view, client, logger }) => {
+  console.log('try');
   try {
     settingService.setup(view.state.values);
+    console.log(1);
     await ack(success());
   } catch (e) {
+    console.log(0);
+    console.log(e);
     await ack(error());
   }
 });
@@ -124,13 +128,14 @@ app.view('mention_modal', async ({ ack, body, view, client, logger }) => {
 });
 
 (async () => {
-  try {
-    await app.start(3000);
-    console.log('Bot is running!');
+  await app.start(process.env.PORT || 3000);
+  console.log('Bot is running!');
 
-    mongoose.connect(url, { useNewUrlParser: true });
-    console.log('MongoDB is connected!');
-  } catch (error) {
-    console.log(error);
-  }
+  mongoose.connect(url, { useNewUrlParser: true });
+  console.log('MongoDB is connected!');
 })();
+
+// const handle = (req, res) => res.end('hit');
+// const server = http.createServer(handle);
+
+// server.listen(process.env.PORT || 3000);
