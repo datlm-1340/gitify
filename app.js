@@ -15,7 +15,7 @@ const success = require('./src/views/success');
 const error = require('./src/views/error');
 const setup = require('./src/views/setup');
 const mention = require('./src/views/mention');
-const addUser = require('./src/views/add_user');
+const settingUsers = require('./src/views/users');
 
 const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -27,7 +27,6 @@ const notifyService = new NotifyService(app);
 const settingService = new SettingService(app);
 
 app.event('app_mention', async ({ event, client }) => {
-  console.log('hello');
   if (!event.thread_ts) return;
 
   let text = '';
@@ -58,7 +57,7 @@ app.message(async ({ message, say }) => {
   notifyService.execute(message);
 });
 
-app.command('/add_user', async ({ ack, body, client, logger }) => {
+app.command('/users', async ({ ack, body, client, logger }) => {
   await ack();
   const repository = await Repository.findOne({ channel: body.channel_id }).exec();
   const users = repository.users;
@@ -66,7 +65,7 @@ app.command('/add_user', async ({ ack, body, client, logger }) => {
   const githubIds = users.map((user) => user.githubId);
 
   try {
-    await client.views.open(addUser(body, userIds, githubIds, repository));
+    await client.views.open(settingUsers(body, userIds, githubIds, repository));
   } catch (error) {
     logger.error(error);
   }
@@ -95,25 +94,22 @@ app.command('/setup', async ({ ack, body, client, logger }) => {
 });
 
 app.view('setup_modal', async ({ ack, body, view, client, logger }) => {
-  console.log('try');
   try {
     settingService.setup(view.state.values);
-    console.log(1);
     await ack(success());
   } catch (e) {
-    console.log(0);
-    console.log(e);
     await ack(error());
+    console.error(e);
   }
 });
 
-app.view('add_user_modal', async ({ ack, body, view, client, logger }) => {
+app.view('users_modal', async ({ ack, body, view, client, logger }) => {
   try {
-    settingService.addUser(view.state.values);
+    settingService.settingUsers(view.state.values);
     await ack(success());
   } catch (e) {
     await ack(error());
-    console.log(e);
+    console.error(e);
   }
 });
 
@@ -123,19 +119,18 @@ app.view('mention_modal', async ({ ack, body, view, client, logger }) => {
     await ack(success());
   } catch (e) {
     await ack(error());
-    console.log(e);
+    console.error(e);
   }
 });
 
 (async () => {
-  await app.start(process.env.PORT || 3000);
-  console.log('Bot is running!');
+  try {
+    await app.start(process.env.PORT || 3000);
+    console.log('Bot is running!');
 
-  mongoose.connect(url, { useNewUrlParser: true });
-  console.log('MongoDB is connected!');
+    mongoose.connect(url, { useNewUrlParser: true });
+    console.log('MongoDB is connected!');
+  } catch (e) {
+    console.error(e);
+  }
 })();
-
-// const handle = (req, res) => res.end('hit');
-// const server = http.createServer(handle);
-
-// server.listen(process.env.PORT || 3000);
