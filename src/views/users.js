@@ -1,8 +1,8 @@
-const addUser = (body, userIds, githubIds, repository) => {
+const settingUsers = (body, userIds, githubIds, repository) => {
   return {
     trigger_id: body.trigger_id,
     view: {
-      callback_id: 'add_user_modal',
+      callback_id: 'users_modal',
       type: 'modal',
       title: {
         type: 'plain_text',
@@ -101,4 +101,4 @@ const addUser = (body, userIds, githubIds, repository) => {
   };
 };
 
-module.exports = addUser;
+module.exports = settingUsers;

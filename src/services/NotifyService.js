@@ -11,14 +11,14 @@ class NotifyService {
   notify = async (message, content, repository) => {
     try {
       let result = await this.app.client.chat.postMessage({
-        token: process.env.SLACK_USER_TOKEN,
+        token: process.env.SLACK_BOT_TOKEN,
         channel: repository.channel,
         ...content,
       });
 
       return result;
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -44,7 +44,7 @@ class NotifyService {
   };
 
   getPullRequestID = (context) => {
-    if (context) return context.match(/pull\/(.)/)[1];
+    if (context) return context.match(/pull\/(\d+)/)[1];
   };
 
   getThread = (context, threads) => {
@@ -60,7 +60,7 @@ class NotifyService {
     const pattern = message.attachments && message.attachments[0].pretext;
     if (!pattern) return;
 
-    if (pattern.includes('opened')) {
+    if (pattern.includes('Pull request opened')) {
       return MESSAGE_TYPE[0];
     } else if (pattern.includes('New comment')) {
       return MESSAGE_TYPE[1];
@@ -73,7 +73,7 @@ class NotifyService {
 
   forward = async (message, repository) => {
     const messageType = this.filter(message);
-
+    console.log(messageType);
     switch (messageType) {
       case MESSAGE_TYPE[0]:
         this.openNotify(message, repository);
@@ -116,12 +116,19 @@ class NotifyService {
       pullRequest: this.getPullRequestID(attachments.title),
     };
 
-    await Repository.updateOne({ repository: repository.id }, { $addToSet: { threads: thread } });
+    let rs = await Repository.updateOne(
+      { id: repository.id },
+      { $addToSet: { threads: thread } },
+      { upsert: true },
+    );
   };
 
   commentNotify = (message, repository) => {
     const { pretext, ...attachments } = message.attachments[0];
     const thread = this.getThread(attachments.title, repository.threads);
+
+    if (!thread) return;
+
     const githubMentions = _.map(
       this.getUserByGithubID(attachments.text, repository.users, true),
       (id) => `<@${id}>`,
@@ -142,6 +149,9 @@ class NotifyService {
   approveNotify = (message, repository) => {
     const { pretext, ...attachments } = message.attachments[0];
     const thread = this.getThread(attachments.title_link, repository.threads);
+
+    if (!thread) return;
+
     const content = {
       thread_ts: thread.threadTs,
       text:
@@ -157,6 +167,9 @@ class NotifyService {
   mergeNotify = (message, repository) => {
     const { pretext, ...attachments } = message.attachments[0];
     const thread = this.getThread(attachments.title, repository.threads);
+
+    if (!thread) return;
+
     const content = {
       thread_ts: thread.threadTs,
       text: `<@${thread.author}>\n\n:github-merged: *Merged*`,
@@ -169,7 +182,8 @@ class NotifyService {
   execute = async (message) => {
     let repository = await Repository.findOne({ notificationChannel: message.channel }).exec();
 
-    if (!repository) return console.log('Invalid repository!');
+    if (!repository) return;
+
     if (message.bot_id) this.forward(message, repository);
   };
 }

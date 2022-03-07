@@ -16,7 +16,7 @@ class SettingService {
     await newRepo.save();
   };
 
-  addUser = async (params) => {
+  settingUsers = async (params) => {
     const repository = await Repository.findOne({
       channel: params['repository_select']['repository'].selected_option.value,
     }).exec();
@@ -50,8 +50,9 @@ class SettingService {
 
       if (!currentUsers.some((user) => user.slackId === slackId)) {
         await Repository.updateOne(
-          { repository: repository.id, 'users.slackId': { $ne: user.slackId } },
+          { id: repository.id, 'users.slackId': { $ne: user.slackId } },
           { $addToSet: { users: user } },
+          { upsert: true },
         );
       }
     }
