@@ -21,6 +21,7 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
   appToken: process.env.SLACK_APP_TOKEN,
   token: process.env.SLACK_BOT_TOKEN,
+  port: process.env.PORT || 3000,
 });
 
 const notifyService = new NotifyService(app);
@@ -31,7 +32,7 @@ app.event('app_mention', async ({ event, client }) => {
 
   let text = '';
 
-  if (/(r|R)emind/.test(event.text)) {
+  if (/remind|notify|ready/.test(event.text.toLowerCase())) {
     const repository = await Repository.findOne({ channel: event.channel }).exec();
     const thread = _.find(repository.threads, (thread) => thread.threadTs === event.thread_ts);
     const mentionIds = _.map(
@@ -43,7 +44,7 @@ app.event('app_mention', async ({ event, client }) => {
       mentionIds +
       `\n\nPlease review this PR: \n\nhttps://github.com/${repository.id}/pull/${thread.pullRequest}`;
   } else {
-    text = 'Tớ chỉ hiểu lệnh `remind` thôi bạn!';
+    text = 'Tớ chỉ hiểu lệnh `remind`, `notify` hoặc `ready` thôi bạn êi!';
   }
 
   await client.chat.postMessage({
@@ -125,7 +126,7 @@ app.view('mention_modal', async ({ ack, body, view, client, logger }) => {
 
 (async () => {
   try {
-    await app.start(process.env.PORT || 3000);
+    await app.start();
     console.log('Bot is running!');
 
     mongoose.connect(url, { useNewUrlParser: true });

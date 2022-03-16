@@ -1,4 +1,3 @@
-// fake data
 const _ = require('lodash');
 const Repository = require('../models/Repository');
 const MESSAGE_TYPE = ['open', 'comment', 'approve', 'merge'];
@@ -44,7 +43,11 @@ class NotifyService {
   };
 
   getPullRequestID = (context) => {
-    if (context) return context.match(/pull\/(\d+)/)[1];
+    if (!context) return;
+
+    const matches = context.match(/pull\/(\d+)/) || context.match(/\#(\d+)/);
+
+    if (!_.isEmpty(matches)) return matches[1];
   };
 
   getThread = (context, threads) => {
@@ -60,20 +63,20 @@ class NotifyService {
     const pattern = message.attachments && message.attachments[0].pretext;
     if (!pattern) return;
 
-    if (pattern.includes('Pull request opened')) {
+    if (pattern.includes('opened')) {
       return MESSAGE_TYPE[0];
     } else if (pattern.includes('New comment')) {
       return MESSAGE_TYPE[1];
-    } else if (pattern.includes('Review approved')) {
+    } else if (pattern.includes('approved')) {
       return MESSAGE_TYPE[2];
-    } else if (pattern.includes('Pull request merged')) {
+    } else if (pattern.includes('merged')) {
       return MESSAGE_TYPE[3];
     }
   };
 
   forward = async (message, repository) => {
     const messageType = this.filter(message);
-    console.log(messageType);
+
     switch (messageType) {
       case MESSAGE_TYPE[0]:
         this.openNotify(message, repository);
@@ -88,24 +91,16 @@ class NotifyService {
         this.mergeNotify(message, repository);
         break;
       default:
-        console.log('Skip');
         break;
     }
   };
 
   openNotify = async (message, repository) => {
-    const { pretext, ...attachments } = message.attachments[0];
+    const { pretext, text, image_url, image_width, image_height, image_bytes, ...attachments } =
+      message.attachments[0];
     const author = this.getUserByGithubID(pretext, repository.users);
-    const mentionIds = _.map(
-      _.find(repository.users, (user) => user.slackId === author).mention,
-      (id) => `<@${id}>`,
-    ).join(' ');
-
     const content = {
-      text:
-        `${mentionIds}\n\n` +
-        `:github-open: *New pull request* by ` +
-        `<@${this.getUserByGithubID(pretext, repository.users)}>`,
+      text: `:github-open: *New pull request* by ` + `<@${author}>`,
       attachments: [attachments],
     };
 
@@ -116,7 +111,7 @@ class NotifyService {
       pullRequest: this.getPullRequestID(attachments.title),
     };
 
-    let rs = await Repository.updateOne(
+    await Repository.updateOne(
       { id: repository.id },
       { $addToSet: { threads: thread } },
       { upsert: true },
@@ -126,6 +121,7 @@ class NotifyService {
   commentNotify = (message, repository) => {
     const { pretext, ...attachments } = message.attachments[0];
     const thread = this.getThread(attachments.title, repository.threads);
+    const commenter = pretext.match(/\|(.*?)>/)[1];
 
     if (!thread) return;
 
@@ -139,7 +135,7 @@ class NotifyService {
       text:
         `<@${thread.author}> ${githubMentions}\n\n` +
         `:github-commented: *Commented* by ` +
-        `<@${this.getUserByGithubID(pretext, repository.users)}>`,
+        `${commenter}`,
       attachments: [attachments],
     };
 
@@ -149,16 +145,13 @@ class NotifyService {
   approveNotify = (message, repository) => {
     const { pretext, ...attachments } = message.attachments[0];
     const thread = this.getThread(attachments.title_link, repository.threads);
+    const approver = pretext.match(/\|(.*?)>/)[1];
 
     if (!thread) return;
 
     const content = {
       thread_ts: thread.threadTs,
-      text:
-        `<@${thread.author}>\n\n` +
-        `:github-approved: *Approved* by ` +
-        `<@${this.getUserByGithubID(pretext, repository.users)}>`,
-      attachments: [attachments],
+      text: `:github-approved: *Approved* by ` + `${approver}`,
     };
 
     this.notify(message, content, repository);
@@ -173,7 +166,6 @@ class NotifyService {
     const content = {
       thread_ts: thread.threadTs,
       text: `<@${thread.author}>\n\n:github-merged: *Merged*`,
-      attachments: [attachments],
     };
 
     this.notify(message, content, repository);
