@@ -65,7 +65,7 @@ class NotifyService {
     const pattern = message.attachments && message.attachments[0].pretext;
     if (!pattern) return;
 
-    if (pattern.includes('opened')) {
+    if (pattern.includes('Pull request opened')) {
       return MESSAGE_TYPE[0];
     } else if (pattern.includes('comment')) {
       return MESSAGE_TYPE[1];
@@ -78,7 +78,7 @@ class NotifyService {
 
   forward = async (message, repository) => {
     const messageType = this.filter(message);
-
+    console.log(messageType);
     switch (messageType) {
       case MESSAGE_TYPE[0]:
         this.openNotify(message, repository);
