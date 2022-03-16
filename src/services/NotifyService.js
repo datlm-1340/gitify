@@ -1,5 +1,3 @@
-// fake data
-const { matches } = require('lodash');
 const _ = require('lodash');
 const Repository = require('../models/Repository');
 const MESSAGE_TYPE = ['open', 'comment', 'approve', 'merge'];
@@ -65,7 +63,7 @@ class NotifyService {
     const pattern = message.attachments && message.attachments[0].pretext;
     if (!pattern) return;
 
-    if (pattern.includes('Pull request opened')) {
+    if (pattern.includes('opened')) {
       return MESSAGE_TYPE[0];
     } else if (pattern.includes('comment')) {
       return MESSAGE_TYPE[1];
@@ -99,6 +97,7 @@ class NotifyService {
   };
 
   openNotify = async (message, repository) => {
+    console.log(message);
     const { pretext, ...attachments } = message.attachments[0];
     const author = this.getUserByGithubID(pretext, repository.users);
     const mentionIds = _.map(
@@ -121,7 +120,7 @@ class NotifyService {
       pullRequest: this.getPullRequestID(attachments.title),
     };
 
-    let rs = await Repository.updateOne(
+    await Repository.updateOne(
       { id: repository.id },
       { $addToSet: { threads: thread } },
       { upsert: true },
@@ -133,6 +132,8 @@ class NotifyService {
     const thread = this.getThread(attachments.title, repository.threads);
 
     if (!thread) return;
+
+    console.log(attachments);
 
     const githubMentions = _.map(
       this.getUserByGithubID(attachments.text, repository.users, true),
@@ -163,7 +164,6 @@ class NotifyService {
         `<@${thread.author}>\n\n` +
         `:github-approved: *Approved* by ` +
         `<@${this.getUserByGithubID(pretext, repository.users)}>`,
-      attachments: [attachments],
     };
 
     this.notify(message, content, repository);
@@ -178,7 +178,6 @@ class NotifyService {
     const content = {
       thread_ts: thread.threadTs,
       text: `<@${thread.author}>\n\n:github-merged: *Merged*`,
-      attachments: [attachments],
     };
 
     this.notify(message, content, repository);

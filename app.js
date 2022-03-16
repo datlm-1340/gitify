@@ -21,6 +21,7 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
   appToken: process.env.SLACK_APP_TOKEN,
   token: process.env.SLACK_BOT_TOKEN,
+  port: process.env.PORT || 3000,
 });
 
 const notifyService = new NotifyService(app);
@@ -125,7 +126,7 @@ app.view('mention_modal', async ({ ack, body, view, client, logger }) => {
 
 (async () => {
   try {
-    await app.start(process.env.PORT || 3000);
+    await app.start();
     console.log('Bot is running!');
 
     mongoose.connect(url, { useNewUrlParser: true });
